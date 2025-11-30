@@ -1,0 +1,206 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAX 100
+
+struct Transaction {
+    char type[20];       // Deposit / Withdrawal
+    float amount;
+    char date[20];       // YYYY-MM-DD
+};
+
+struct BankAccount {
+    int accountNo;
+    char name[50];
+    char type[20];       // Savings, Current, Fixed Deposit
+    float balance;
+
+    char creationDate[20];
+    char lastTransactionDate[20];
+
+    struct Transaction history[50];
+    int tCount;
+};
+
+struct BankAccount accounts[MAX];
+int count = 0;
+
+// Minimum balances
+float minBalance(char *type) {
+    if (strcmp(type, "Savings") == 0) return 1000;
+    if (strcmp(type, "Current") == 0) return 5000;
+    if (strcmp(type, "Fixed") == 0) return 10000;
+    return 0;
+}
+
+// Interest Rates
+float interestRate(char *type) {
+    if (strcmp(type, "Savings") == 0) return 0.04;
+    if (strcmp(type, "Fixed") == 0) return 0.07;
+    return 0.0;
+}
+
+void createAccount() {
+    struct BankAccount a;
+
+    printf("Enter Account No: ");
+    scanf("%d", &a.accountNo);
+
+    printf("Enter Name: ");
+    scanf(" %[^\n]", a.name);
+
+    printf("Enter Type (Savings/Current/Fixed): ");
+    scanf("%s", a.type);
+
+    printf("Enter Opening Balance: ");
+    scanf("%f", &a.balance);
+
+    if (a.balance < minBalance(a.type)) {
+        printf("ERROR: Minimum balance for %s is %.2f\n", a.type, minBalance(a.type));
+        return;
+    }
+
+    printf("Enter Creation Date (YYYY-MM-DD): ");
+    scanf("%s", a.creationDate);
+
+    strcpy(a.lastTransactionDate, a.creationDate);
+    a.tCount = 0;
+
+    accounts[count++] = a;
+
+    printf("\nAccount Created Successfully!\n");
+}
+
+int findAcc(int acc) {
+    for (int i = 0; i < count; i++)
+        if (accounts[i].accountNo == acc)
+            return i;
+    return -1;
+}
+
+void deposit() {
+    int acc;
+    printf("Enter account number: ");
+    scanf("%d", &acc);
+
+    int i = findAcc(acc);
+    if (i == -1) {
+        printf("Account not found!\n");
+        return;
+    }
+
+    float amt;
+    printf("Enter amount: ");
+    scanf("%f", &amt);
+
+    accounts[i].balance += amt;
+
+    struct Transaction t;
+    strcpy(t.type, "Deposit");
+    t.amount = amt;
+
+    printf("Enter transaction date: ");
+    scanf("%s", t.date);
+
+    strcpy(accounts[i].lastTransactionDate, t.date);
+    accounts[i].history[accounts[i].tCount++] = t;
+
+    printf("Deposit Successful!\n");
+}
+
+void withdraw() {
+    int acc;
+    printf("Enter account number: ");
+    scanf("%d", &acc);
+
+    int i = findAcc(acc);
+    if (i == -1) {
+        printf("Account not found!\n");
+        return;
+    }
+
+    float amt;
+    printf("Enter amount: ");
+    scanf("%f", &amt);
+
+    if (accounts[i].balance - amt < minBalance(accounts[i].type)) {
+        printf("ERROR: Cannot go below minimum balance!\n");
+        return;
+    }
+
+    accounts[i].balance -= amt;
+
+    struct Transaction t;
+    strcpy(t.type, "Withdrawal");
+    t.amount = amt;
+
+    printf("Enter transaction date: ");
+    scanf("%s", t.date);
+
+    strcpy(accounts[i].lastTransactionDate, t.date);
+    accounts[i].history[accounts[i].tCount++] = t;
+
+    printf("Withdrawal Successful!\n");
+}
+
+void calculateInterest() {
+    int acc;
+    printf("Enter account number: ");
+    scanf("%d", &acc);
+
+    int i = findAcc(acc);
+    if (i == -1) {
+        printf("Account not found!\n");
+        return;
+    }
+
+    float rate = interestRate(accounts[i].type);
+    float interest = accounts[i].balance * rate;
+
+    printf("\nInterest for account %d = %.2f\n", acc, interest);
+}
+
+void showAccount() {
+    int acc;
+    printf("Enter account number: ");
+    scanf("%d", &acc);
+
+    int i = findAcc(acc);
+    if (i == -1) {
+        printf("Account not found!\n");
+        return;
+    }
+
+    struct BankAccount a = accounts[i];
+
+    printf("\n----- ACCOUNT DETAILS -----\n");
+    printf("Account No: %d\nName: %s\nType: %s\nBalance: %.2f\n",
+           a.accountNo, a.name, a.type, a.balance);
+
+    printf("Created: %s\nLast Transaction: %s\n", a.creationDate, a.lastTransactionDate);
+
+    printf("\nTransaction History:\n");
+    for (int j = 0; j < a.tCount; j++) {
+        printf("%s - %.2f on %s\n", a.history[j].type, a.history[j].amount, a.history[j].date);
+    }
+}
+
+int main() {
+    int choice;
+
+    do {
+        printf("\n===== BANK MENU =====\n");
+        printf("1. Create Account\n2. Deposit\n3. Withdraw\n4. Interest\n5. Show Account\n6. Exit\n");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: createAccount(); break;
+            case 2: deposit(); break;
+            case 3: withdraw(); break;
+            case 4: calculateInterest(); break;
+            case 5: showAccount(); break;
+        }
+    } while (choice != 6);
+
+    return 0;
+}
